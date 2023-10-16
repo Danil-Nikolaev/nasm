@@ -1,0 +1,200 @@
+     1                                  section .data
+     2                                      
+     3                                  section .bss
+     4 00000000 <res FFh>                   Inbuf resb 255
+     5                                      lenIn equ $-Inbuf
+     6 000000FF <res 32h>                   substring resb 50
+     7                                      lenSub equ $-substring
+     8 00000131 <res Ah>                    Buf resb 10
+     9                                      lenBuf equ $-Buf
+    10                                      global _start
+    11                                  section .text
+    12                                  _start:
+    13                                      
+    14 00000000 B803000000                  mov eax, 3
+    15 00000005 BB00000000                  mov ebx, 0
+    16 0000000A B9[00000000]                mov ecx, Inbuf
+    17 0000000F BAFF000000                  mov edx, lenIn
+    18 00000014 CD80                        int 80h
+    19                                  
+    20 00000016 B9FF000000                  mov ecx, 255
+    21 0000001B BF[00000000]                mov edi, Inbuf
+    22 00000020 B00A                        mov al, 0ah
+    23 00000022 F2AE                        repne scasb
+    24 00000024 B8FE000000                  mov eax, 254
+    25 00000029 29C8                        sub eax, ecx
+    26 0000002B C680[00000000]20            mov byte[Inbuf + eax], ' '
+    27 00000032 89C1                        mov ecx, eax
+    28 00000034 41                          inc ecx
+    29 00000035 BA00000000                  mov edx, 0
+    30 0000003A B800000000                  mov eax, 0
+    31 0000003F BB00000000                  mov ebx, 0
+    32 00000044 BF00000000                  mov edi, 0
+    33                                  
+    34                                      loop_one:
+    35 00000049 8A83[00000000]                  mov al, [Inbuf + ebx]
+    36 0000004F 3C20                            cmp al, ' '
+    37 00000051 740F                            je space
+    38 00000053 8882[FF000000]                      mov [substring + edx], al
+    39 00000059 43                                  inc ebx
+    40 0000005A 42                                  inc edx
+    41 0000005B E2EC                                loop loop_one
+    42 0000005D E991000000                          jmp finish
+    43                                          space:
+    44 00000062 53                                  push ebx
+    45 00000063 51                                  push ecx
+    46 00000064 52                                  push edx
+    47 00000065 89D1                                mov ecx, edx
+    48 00000067 BB00000000                          mov ebx, 0
+    49 0000006C BA00000000                          mov edx, 0
+    50 00000071 BE00000000                          mov esi, 0
+    51                                              loop_find_digit:
+    52 00000076 8A83[FF000000]                          mov al, [substring + ebx]
+    53 0000007C 3C30                                    cmp al, '0'
+    54 0000007E 742A                                    je digit
+    55 00000080 3C31                                    cmp al, '1'
+    56 00000082 7426                                    je digit
+    57 00000084 3C32                                    cmp al, '2'
+    58 00000086 7422                                    je digit
+    59 00000088 3C33                                    cmp al, '3'
+    60 0000008A 741E                                    je digit
+    61 0000008C 3C34                                    cmp al, '4'
+    62 0000008E 741A                                    je digit
+    63 00000090 3C35                                    cmp al, '5'
+    64 00000092 7416                                    je digit
+    65 00000094 3C36                                    cmp al, '6'
+    66 00000096 7412                                    je digit
+    67 00000098 3C37                                    cmp al, '7'
+    68 0000009A 740E                                    je digit
+    69 0000009C 3C38                                    cmp al, '8'
+    70 0000009E 740A                                    je digit
+    71 000000A0 3C39                                    cmp al, '9'
+    72 000000A2 7406                                    je digit
+    73 000000A4 42                                          inc edx
+    74 000000A5 43                                          inc ebx
+    75 000000A6 E2CE                                        loop loop_find_digit
+    76 000000A8 EB04                                        jmp end_find_digit
+    77                                                  digit:
+    78 000000AA 46                                          inc esi
+    79 000000AB 43                                          inc ebx
+    80 000000AC E2C8                                        loop loop_find_digit
+    81                                                  end_find_digit:
+    82 000000AE 83FE02                                      cmp esi, 2
+    83 000000B1 7F02                                        jg greater
+    84 000000B3 EB1D                                        jmp smaller
+    85                                                      greater:
+    86 000000B5 47                                              inc edi
+    87 000000B6 89D0                                            mov eax, edx
+    88 000000B8 BE[31010000]                                    mov esi, Buf
+    89 000000BD E8(55000000)                                    call IntToStr
+    90 000000C2 89C2                                            mov edx, eax
+    91 000000C4 B804000000                                      mov eax, 4
+    92 000000C9 BB01000000                                      mov ebx, 1
+    93 000000CE 89F1                                            mov ecx, esi
+    94 000000D0 CD80                                            int 80h
+    95                                                      smaller:
+    96 000000D2 5A                                              pop edx
+    97 000000D3 89D1                                            mov ecx, edx
+    98 000000D5 BA00000000                                      mov edx, 0
+    99                                                      loop_space_substr:
+   100 000000DA C682[FF000000]20                                mov byte[substring + edx], ' '
+   101 000000E1 42                                              inc edx
+   102 000000E2 E2F6                                            loop loop_space_substr
+   103 000000E4 BA00000000                                  mov edx, 0
+   104 000000E9 59                                          pop ecx
+   105 000000EA 5B                                          pop ebx
+   106 000000EB 43                                          inc ebx
+   107 000000EC 49                                          dec ecx
+   108 000000ED 0F8556FFFFFF                                jnz loop_one
+   109                                      finish:
+   110 000000F3 89F8                            mov eax, edi
+   111 000000F5 BE[31010000]                    mov esi, Buf
+   112 000000FA E8(55000000)                    call IntToStr
+   113 000000FF 89C2                            mov edx, eax
+   114 00000101 B804000000                      mov eax, 4
+   115 00000106 BB01000000                      mov ebx, 1
+   116 0000010B 89F1                            mov ecx, esi
+   117 0000010D CD80                            int 80h
+   118 0000010F B801000000                      mov eax, 1
+   119 00000114 31DB                            xor ebx, ebx
+   120 00000116 CD80                            int 80h
+   121                                  %include "../lib.asm"
+   122                              <1>     section _text
+   123                              <1> StrToInt:
+   124 00000000 57                  <1>          push   edi
+   125 00000001 B739                <1>          mov    bh, '9'
+   126 00000003 B330                <1>          mov    bl, '0'
+   127 00000005 56                  <1>          push   esi     ; ��������� ����� �������� ������
+   128 00000006 803E2D              <1>          cmp    byte[esi], '-'
+   129 00000009 7501                <1>          jne   .prod
+   130 0000000B 46                  <1>          inc    esi     ; ���������� ����
+   131 0000000C FC                  <1> .prod    cld
+   132 0000000D 6631FF              <1>          xor    di, di  ; �������� ������� �����
+   133 00000010 AC                  <1> .cycle:  lodsb          ; ��������� ������ (�����)
+   134 00000011 3C0A                <1>          cmp    al, 10  ; ���� 10, �� �� �����
+   135 00000013 741F                <1>          je     .Return
+   136 00000015 38D8                <1>          cmp    al, bl  ; ���������� � ����� ����
+   137 00000017 722F                <1>          jb     .Error  ; "����" � ������
+   138 00000019 38F8                <1>          cmp    al, bh  ; ���������� � ����� ������ 
+   139 0000001B 772B                <1>          ja     .Error  ; "����" � ������
+   140 0000001D 2C30                <1>          sub    al, 30h ; �������� ����� �� �������
+   141 0000001F 6698                <1>          cbw            ; ��������� �� �����
+   142 00000021 6650                <1>          push   ax      ; ��������� � �����
+   143 00000023 66B80A00            <1>          mov    ax, 10  ; ������� 10 � AX
+   144 00000027 66F7E7              <1>          mul    di      ; ��������, ��������� � DX:AX
+   145 0000002A 665F                <1>          pop    di      ; � DI � ��������� �����
+   146 0000002C 6601F8              <1>          add    ax, di
+   147 0000002F 6689C7              <1>          mov    di, ax  ; � DI � ����������� �����        
+   148 00000032 EBDC                <1>          jmp    .cycle
+   149 00000034 5E                  <1> .Return: pop    esi
+   150 00000035 BB00000000          <1>          mov    ebx, 0
+   151 0000003A 803E2D              <1>          cmp    byte[esi], '-'
+   152 0000003D 7503                <1>          jne    .J
+   153 0000003F 66F7DF              <1>          neg    di
+   154 00000042 6689F8              <1> .J       mov    ax, di
+   155 00000045 98                  <1>          cwde
+   156 00000046 EB0B                <1>          jmp    .R
+   157 00000048 5E                  <1> .Error:  pop    esi
+   158 00000049 B800000000          <1>          mov    eax, 0
+   159 0000004E BB01000000          <1>          mov    ebx, 1
+   160 00000053 5F                  <1> .R       pop    edi
+   161 00000054 C3                  <1>          ret
+   162                              <1> IntToStr: 
+   163 00000055 57                  <1>          push   edi
+   164 00000056 53                  <1>          push   ebx
+   165 00000057 52                  <1>          push   edx
+   166 00000058 51                  <1>          push   ecx
+   167 00000059 56                  <1> 		 push   esi
+   168 0000005A C60600              <1> 		 mov    byte[esi],0 ; �� ����� �����
+   169 0000005D 83F800              <1>          cmp    eax,0
+   170 00000060 7D05                <1>          jge    .l1
+   171 00000062 F7D8                <1>          neg    eax
+   172 00000064 C6062D              <1>          mov    byte[esi],'-'
+   173 00000067 C646060A            <1> .l1      mov    byte[esi+6],10
+   174 0000006B BF05000000          <1>          mov    edi,5
+   175 00000070 66BB0A00            <1>          mov    bx,10
+   176 00000074 6699                <1> .again:  cwd           ; ��������� ����� �� ��������
+   177 00000076 66F7F3              <1>          div    bx     ; ����� ��������� �� 10
+   178 00000079 80C230              <1>          add    dl,30h ; �������� �� ������� ��� �����
+   179 0000007C 88143E              <1>          mov    [esi+edi],dl ; ����� ������ � ������
+   180 0000007F 4F                  <1>          dec    edi    ; ��������� ��������� ��  
+   181                              <1>                        ; ���������� �������
+   182 00000080 6683F800            <1>          cmp    ax, 0  ; ������������� ��� �����?
+   183 00000084 75EE                <1>          jne    .again
+   184 00000086 B906000000          <1>          mov    ecx, 6
+   185 0000008B 29F9                <1>          sub    ecx, edi ; ����� ����������+����
+   186 0000008D 89C8                <1> 		 mov    eax,ecx
+   187 0000008F 40                  <1> 		 inc    eax      ; ����� ����������+0�
+   188 00000090 46                  <1>          inc    esi      ; ���������� ����
+   189 00000091 56                  <1> 		 push   esi
+   190 00000092 8D343E              <1>          lea    esi,[esi+edi] ; ������ ����������
+   191 00000095 5F                  <1> 		 pop    edi
+   192 00000096 F3A4                <1>          rep movsb
+   193 00000098 5E                  <1>          pop    esi  
+   194 00000099 59                  <1>          pop    ecx
+   195 0000009A 5A                  <1>          pop    edx
+   196 0000009B 5B                  <1>          pop    ebx
+   197 0000009C 5F                  <1>          pop    edi
+   198 0000009D C3                  <1>          ret
+   122                                  
+   123                                      
